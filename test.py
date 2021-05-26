@@ -5,7 +5,7 @@ from scipy.linalg import norm
 import scipy as sp
 from numpy.linalg import inv
 Lx=1
-Nx=100
+Nx=150
 # Define the grid
 x = np.linspace(-Lx/2, Lx/2, Nx, endpoint = False)
 # This reads "I want Nx points equally distributed"
@@ -49,8 +49,13 @@ vals,vecs = np.linalg.eigh(ham)
 #Check results
 e0 = vals[0]
 print('Groundstate energy:  ',e0)
+print('kinetic energy 0:  ',vecs[:,0].dot(Tmat2.dot(vecs[:,0])))
 e1= vals[1]
-print('excited singlet state energy: ', e1)
+print('first excited singlet state energy: ', e1)
+print('kinetic energy 1:  ',vecs[:,1].dot(Tmat2.dot(vecs[:,1])))
+e2= vals[2]
+print('second excited singlet state energy: ', e2)
+print('kinetic energy 2:  ',vecs[:,2].dot(Tmat2.dot(vecs[:,2])))
 
 #########################################################################
 
