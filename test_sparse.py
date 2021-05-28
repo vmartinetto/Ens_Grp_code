@@ -64,7 +64,7 @@ Wmat = spa.dia_matrix((1/np.sqrt(dx**2*rootdist**2+a**2),0),shape=(Nx**2,Nx**2))
 ham = Tmat2 + Wmat
 
 # Diagonalization of dense matrix
-vals_c, vecs_c = eigh(ham.toarray())
+#vals_c, vecs_c = eigh(ham.toarray())
 
 # Diagonalizations of sparse matrix
 vals, vecs = eigsh(ham,which='SA')
