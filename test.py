@@ -5,7 +5,7 @@ from scipy.linalg import norm
 import scipy as sp
 from numpy.linalg import inv
 Lx=1
-Nx=150
+Nx=50
 # Define the grid
 x = np.linspace(-Lx/2, Lx/2, Nx, endpoint = False)
 # This reads "I want Nx points equally distributed"
@@ -56,6 +56,43 @@ print('kinetic energy 1:  ',vecs[:,1].dot(Tmat2.dot(vecs[:,1])))
 e2= vals[2]
 print('second excited singlet state energy: ', e2)
 print('kinetic energy 2:  ',vecs[:,2].dot(Tmat2.dot(vecs[:,2])))
+e3= vals[3]
+print('third excited singlet state energy: ', e3)
+print('kinetic energy 3:  ',vecs[:,3].dot(Tmat2.dot(vecs[:,3])))
+e4= vals[4]
+print('fourth excited singlet state energy: ', e4)
+print('kinetic energy 4:  ',vecs[:,4].dot(Tmat2.dot(vecs[:,4])))
+
+#Density
+psi0 = np.matrix(vecs[:,0])
+psi0mat = np.matrix(np.reshape(psi0,(Nx,Nx)))
+corr1RDM = 2*np.dot(psi0mat.getH(),psi0mat)
+density     = np.diag(corr1RDM)
+psi1 = np.matrix(vecs[:,1])
+psi1mat = np.matrix(np.reshape(psi1,(Nx,Nx)))
+corr1RDM1 = 2*np.dot(psi1mat.getH(),psi1mat)
+density1     = np.diag(corr1RDM1)
+psi2 = np.matrix(vecs[:,2])
+psi2mat = np.matrix(np.reshape(psi2,(Nx,Nx)))
+corr1RDM2 = 2*np.dot(psi2mat.getH(),psi2mat)
+density2     = np.diag(corr1RDM2)
+psi3 = np.matrix(vecs[:,3])
+psi3mat = np.matrix(np.reshape(psi3,(Nx,Nx)))
+corr1RDM3 = 2*np.dot(psi3mat.getH(),psi3mat)
+density3     = np.diag(corr1RDM3)
+psi4 = np.matrix(vecs[:,4])
+psi4mat = np.matrix(np.reshape(psi4,(Nx,Nx)))
+corr1RDM4 = 2*np.dot(psi4mat.getH(),psi4mat)
+density4     = np.diag(corr1RDM4)
+#
+plt.plot(density, label='GS dens ')
+plt.plot(density1, label='1st ES dens ')
+plt.plot(density2, label='2nd ES dens ')
+plt.plot(density3, label='3rd ES dens ')
+plt.plot(density4, label='4th ES dens ')
+plt.legend()
+plt.show()
+plt.close()
 
 #########################################################################
 
