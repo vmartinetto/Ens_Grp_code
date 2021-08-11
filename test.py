@@ -9,9 +9,8 @@ from numpy.linalg import inv
 Lx=1
 Nx=100
 # Define the grid
-x = np.linspace(-Lx/2, Lx/2, Nx, endpoint = False)
+x = np.linspace(-Lx*0.5, Lx*0.5, Nx, endpoint = True)
 # This reads "I want Nx points equally distributed"
-
 # Define dx
 dx =x[2] - x[1] #int(L/Nx) #this gives zero division error
 
@@ -107,11 +106,11 @@ psi4mat = np.matrix(np.reshape(psi4,(Nx,Nx)))
 corr1RDM4 = 2*np.dot(psi4mat.getH(),psi4mat)
 density4     = np.diag(corr1RDM4)
 #
-plt.plot(density, label='GS dens ')
-plt.plot(density1, label='1st ES dens ')
-plt.plot(density2, label='2nd ES dens ')
-plt.plot(density3, label='3rd ES dens ')
-plt.plot(density4, label='4th ES dens ')
+plt.plot(x,density, label='GS dens ')
+plt.plot(x,density1, label='1st ES dens ')
+plt.plot(x,density2, label='2nd ES dens ')
+plt.plot(x,density3, label='3rd ES dens ')
+plt.plot(x,density4, label='4th ES dens ')
 plt.legend()
 plt.show()
 plt.close()
@@ -148,12 +147,27 @@ plt.close()
 #plt.show()
 
 #Storing the state(s)
-#rarray = np.tile(x, (Nx, 1))
-#x1 = np.reshape(rarray,Nx*Nx)
-#x2 = np.reshape(np.transpose(rarray),Nx*Nx)
-#c3 = vecs[:,0]
-#wf=np.transpose(np.array((x1,x2,c3)))
-#np.savetxt('wf.out', wf, delimiter=' ')
+#GS
+wf = np.zeros((Nx**2, 3))
+wfval = np.array(vecs[:,0])
+wf[:,2]=wfval
+k = 0
+for i in range(Nx):
+    for j in range(Nx):
+        wf[k,1] = x[i]
+        wf[k,0]=x[j]
+        k += 1
+np.savetxt('wf.dat', wf , fmt='%.4e', delimiter=' ')
+#1st ES
+wfval1= np.array(vecs[:,1])
+wf[:,2]=wfval1
+np.savetxt('wf1.dat', wf , fmt='%.4e', delimiter=' ')
 
+#v_KS        = invert_exact_2el(T, density, 2).real
+sqrt_dens0 = np.sqrt(density)
+Tmat = np.diag(vext+1/(dx**2)) + np.diag(vec, k = 1) + np.diag(vec, k = -1)
+v_KS = (np.divide(np.dot(Tmat, sqrt_dens0),sqrt_dens0)) - e0/2 #I think that, differently than in Iris' code, the T should be not the one for out 2-electron target sys but only the single particle one
+#####################################################################
+np.savetxt('pos.dat', zip(np.transpose(x),np.transpose(density)), fmt='%.4e', delimiter=' ')
 #########################################################################
 
