@@ -6,196 +6,160 @@ import math
 from scipy.linalg import norm
 import scipy as sp
 from numpy.linalg import inv
+
+##################Kinetic Energy Operator Functions###############
+
+
+def Kin_op_dense(Nx,dx,vext):
+
+    #  off-diagonal vector of finite difference matrix 
+
+    vec = np.ones(Nx - 1)/(-2*dx**2)
+
+
+    # kinetic energy operator matrix as dense matrix
+
+    Tmat1 = np.diag(vext+1/(dx**2)) + np.diag(vec, k = 1) + np.diag(vec, k = -1)
+    Tmat2=np.kron(Tmat1,np.identity(Nx))+np.kron(np.identity(Nx),Tmat1)
+
+    return Tmat2
+
+def Kin_op_sparse(Nx,dx,vext):
+
+    # main diagonal of finite difference matrix
+
+    diag = np.ones(Nx)/dx**2
+
+    # full finite difference matrix
+
+    diags = np.array([vext+diag, diag/-2, diag/-2])
+
+    # reforming the Matrix as a sparse object and expanding
+
+    Tmat1 = spa.dia_matrix((diags,[0,-1,1]),shape=s)
+    Tmat2 = spa.kron(Tmat1,spa.identity(Nx)) + spa.kron(spa.identity(Nx),Tmat1)
+
+    return Tmat2
+
+
+#################Interaction Energy Operators#################
+
+
+def Int_op_dense(Nx,dx):
+
+    # cacculate rootdist
+    rootdist = []
+    for i in range(Nx):
+        for j in range(Nx):
+            rootdist.append(abs(i - j))
+
+    # define Wmat as a matrix that is [Nx^2,Nx^2]        
+
+    Wmat = np.zeros((Nx ** 2, Nx ** 2))
+
+    #populate Wmat
+
+    for i in range(Nx ** 2):
+        Wmat[i, i] = 1 / math.sqrt(dx ** 2 * (rootdist[i]) ** 2 + a ** 2)
+
+    return Wmat
+
+def Int_op_sparse(Nx,dx):
+
+    # calculate the rootdist
+
+    rootdist = np.empty(Nx**2)
+    k = 0
+    for i in range(Nx):
+        for j in range(Nx):
+            rootdist[k] = abs(i-j)
+            k += 1
+
+    # calculate the soft-coulomb interaction and make it a sparse matrix
+
+    Wmat = spa.dia_matrix((1/np.sqrt(dx**2*rootdist**2+a**2),0),shape=(Nx**2,Nx**2))
+
+    return Wmat
+
+
+#################Density Function###############################
+
+def density_calc(Nx,psi):
+
+    # reshape data and calculate density
+    psimat = np.matrix(np.reshape(psi,(Nx,Nx)))
+    corr1RDM = 2*np.dot(psimat.getH(),psimat)
+    density     = np.diag(corr1RDM)
+
+    return density
+
+
+##################Defining Variables##############################
+
+
+# Length of box and number of gridpoints
+
 Lx=1
-Nx=300
+Nx=1000
+
 # Define the grid
+
 x = np.linspace(-Lx*0.5, Lx*0.5, Nx, endpoint = False)
-# This reads "I want Nx points equally distributed"
-# Define dx
-dx =x[2] - x[1] #int(L/Nx) #this gives zero division error
+
+# Define the spacing between each grid point
+
+dx =x[2] - x[1] 
 
 #Define softening parameter
-a=0.1#in agreement with parameter in PYTB14, see eq (67)
+
+a=0.1
+
 # Define normalizing prefactor wavefunction
+
 Norm = 1/np.sqrt(dx)
-# 1) Define the size
+
+# Define the size of the of a matrix [Nx,Nx]
+
 s = (x.size,x.size)
 
-# 2) Define the x.size X x.size matrix
-vext=0*np.square(x)
+# Define the external potetial
 
-# Element minor diagonal
-vec = np.ones(x.size - 1)/(-2*dx**2)
-
-# kinetic energy operator matrix as dense matrix
-#Tmat1 = np.diag(vext+1/(dx**2)) + np.diag(vec, k = 1) + np.diag(vec, k = -1)
-#Tmat2=np.kron(Tmat1,np.identity(Nx))+np.kron(np.identity(Nx),Tmat1)
-
-# kinetic energy operator matrix as sparse matrices
-diag = np.ones(Nx)/dx**2
-diags = np.array([vext+diag, diag/-2, diag/-2])
-Tmat1 = spa.dia_matrix((diags,[0,-1,1]),shape=s)
-Tmat2 = spa.kron(Tmat1,spa.identity(Nx)) + spa.kron(spa.identity(Nx),Tmat1)
+vext = 0*np.square(x)
 
 
-# interaction energy operator matrix as dense matrix
-#rootdist = []
-#for i in range(Nx):
-#    for j in range(Nx):
-#        rootdist.append(abs(i - j))
-#Wmat = np.zeros((Nx ** 2, Nx ** 2))
-#for i in range(Nx ** 2):
-#    Wmat[i, i] = 1 / math.sqrt(dx ** 2 * (rootdist[i]) ** 2 + a ** 2)
+###################Operator Calculation########################
 
-# interaction energy operator matrix as sparse matrix
-rootdist = np.empty(Nx**2)
-k = 0
-for i in range(Nx):
-    for j in range(Nx):
-        rootdist[k] = abs(i-j)
-        k += 1
-Wmat = spa.dia_matrix((1/np.sqrt(dx**2*rootdist**2+a**2),0),shape=(Nx**2,Nx**2))
 
-# Hamiltonian operator matrix
+# calculate the sparse Kinetic Energy Operator
+
+Tmat2 = Kin_op_sparse(Nx,dx,vext)
+
+# calculate the space Interaction Energy Operator
+
+Wmat = Int_op_sparse(Nx,dx)
+
+# Construct the Hamiltonian Operator from the previous two
+
 ham = Tmat2 + Wmat
 
+
+##################Digonilization#############################
+
+
 # Diagonalization of dense matrix
+
 #vals,vecs = np.linalg.eigh(ham)
 
 # Diagonalizations of sparse matrix
+
 vals, vecs = eigsh(ham,which='SA')
 
-#Check results
-e0 = vals[0]
-print('Groundstate energy:  ',e0)
-print('kinetic energy 0:  ',vecs[:,0].dot(Tmat2.dot(vecs[:,0])))
-#exporting
-e1= vals[1]
-print('first excited singlet state energy: ', e1)
-print('kinetic energy 1:  ',vecs[:,1].dot(Tmat2.dot(vecs[:,1])))
-e2= vals[2]
-print('second excited singlet state energy: ', e2)
-print('kinetic energy 2:  ',vecs[:,2].dot(Tmat2.dot(vecs[:,2])))
-e3= vals[3]
-print('third excited singlet state energy: ', e3)
-print('kinetic energy 3:  ',vecs[:,3].dot(Tmat2.dot(vecs[:,3])))
-e4= vals[4]
-print('fourth excited singlet state energy: ', e4)
-print('kinetic energy 4:  ',vecs[:,4].dot(Tmat2.dot(vecs[:,4])))
 
-#Density
-psi0 = np.matrix(vecs[:,0])
-psi0mat = np.matrix(np.reshape(psi0,(Nx,Nx)))
-corr1RDM = 2*np.dot(psi0mat.getH(),psi0mat)
-density     = np.diag(corr1RDM)
-psi1 = np.matrix(vecs[:,1])
-psi1mat = np.matrix(np.reshape(psi1,(Nx,Nx)))
-corr1RDM1 = 2*np.dot(psi1mat.getH(),psi1mat)
-density1     = np.diag(corr1RDM1)
-#psi2 = np.matrix(vecs[:,2])
-#psi2mat = np.matrix(np.reshape(psi2,(Nx,Nx)))
-#corr1RDM2 = 2*np.dot(psi2mat.getH(),psi2mat)
-#density2     = np.diag(corr1RDM2)
-#psi3 = np.matrix(vecs[:,3])
-#psi3mat = np.matrix(np.reshape(psi3,(Nx,Nx)))
-#corr1RDM3 = 2*np.dot(psi3mat.getH(),psi3mat)
-#density3     = np.diag(corr1RDM3)
-#psi4 = np.matrix(vecs[:,4])
-#psi4mat = np.matrix(np.reshape(psi4,(Nx,Nx)))
-#corr1RDM4 = 2*np.dot(psi4mat.getH(),psi4mat)
-#density4     = np.diag(corr1RDM4)
-#
-plt.plot(x,density, label='GS dens ')
-plt.plot(x,density1, label='1st ES dens ')
-#plt.plot(x,density2, label='2nd ES dens ')
-#plt.plot(x,density3, label='3rd ES dens ')
-#plt.plot(x,density4, label='4th ES dens ')
-plt.legend()
-plt.show()
-plt.close()
+###################Density Calculation#######################
 
-#Contour plotting the states
-#psi0=vecs[:,0]
-#psi0mat = np.matrix(np.reshape(psi0,(Nx,Nx)))
-#plt.imshow(psi0mat)
-#plt.colorbar()
-#plt.show()
-#
-#psi1=vecs[:,1]
-#psi1mat = np.matrix(np.reshape(psi1,(Nx,Nx)))
-#plt.imshow(psi1mat)
-#plt.colorbar()
-#plt.show()
-#
-#psi2=vecs[:,2]
-#psi2mat = np.matrix(np.reshape(psi2,(Nx,Nx)))
-#plt.imshow(psi2mat)
-#plt.colorbar()
-#plt.show()
-#
-#psi3=vecs[:,3]
-#psi3mat = np.matrix(np.reshape(psi3,(Nx,Nx)))
-#plt.imshow(psi3mat)
-#plt.colorbar()
-#plt.show()
-#
-#psi4=vecs[:,4]
-#psi4mat = np.matrix(np.reshape(psi4,(Nx,Nx)))
-#plt.imshow(psi4mat)
-#plt.colorbar()
-#plt.show()
+density0 = density_calc(Nx,vecs[:,0]) 
+density1 = density_calc(Nx,vecs[:,1])
 
-#Storing the state(s)
-#GS
-#wf = np.zeros((Nx**2, 3))
-#wfval = np.array(vecs[:,0])
-#wf[:,2]=wfval
-#k = 0
-#for i in range(Nx):
-    #for j in range(Nx):
-   #     wf[k,1] = x[i]
-  #      wf[k,0]=x[j]
- #       k += 1
-#np.savetxt('wf.dat', wf , fmt='%.4e', delimiter=' ')
-#1st ES
-#wfval1= np.array(vecs[:,1])
-#wf[:,2]=wfval1
-#np.savetxt('wf1.dat', wf , fmt='%.4e', delimiter=' ')
-
-#v_KS        = invert_exact_2el(T, density, 2).real
-#sqrt_dens0 = np.sqrt(density)
-#Tmat = np.diag(vext+1/(dx**2)) + np.diag(vec, k = 1) + np.diag(vec, k = -1)
-#v_KS =(np.divide(np.dot(-Tmat, sqrt_dens0),sqrt_dens0)) #I think that, differently than in Iris' code, the T should be not the one for out 2-electron target sys but only the single particle one
-#####################################################################
-#np.savetxt('denspy100-8.dat', density, fmt='%.8e', delimiter=' ')
-np.savetxt('denspy-300-9.dat', density, fmt='%.9e', delimiter=' ')
-#np.savetxt('pos.dat', zip(np.transpose(x),np.transpose(density)), fmt='%.4e', delimiter=' ')
-#np.savetxt('vKS.dat', zip(np.transpose(x),np.transpose(v_KS)), fmt='%.4e', delimiter=' ')
-#########################################################################
-# KS Hamiltonian
-#diags = np.array([v_KS+diag, diag/-2, diag/-2])
-#HS1 = spa.dia_matrix((diags,[0,-1,1]),shape=s)
-#HS2 = spa.kron(HS1,spa.identity(Nx)) + spa.kron(spa.identity(Nx),HS1)
-# Diagonalizations of sparse matrix
-#vals, vecs = eigsh(HS1,which='SA')
-#phi0 = np.matrix(vecs[:,0])
-#KSdens= 2*np.square(vecs[:,0])
-
-#plt.plot(x,density, label='GS dens ')
-#plt.plot(x,KSdens, label='KS dens ')
-#plt.plot(x,density2, label='2nd ES dens ')
-#plt.plot(x,density3, label='3rd ES dens ')
-#plt.plot(x,density4, label='4th ES dens ')
-#plt.legend()
-#plt.show()
-#plt.close()
-
-#plt.plot(x,v_KS,label='KS pot')
-#plt.legend()
-#plt.show()
-#plt.close()
-
-
-
-
-
+###################Density Saving###############################
+np.savetxt('denspy-1000-9.dat', density0, fmt='%.9e', delimiter=' ')
+np.savetxt('denspy-1000-1-9.dat', density1, fmt='%.9e', delimiter=' ')
