@@ -1,0 +1,172 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.sparse as spa
+from scipy.sparse.linalg import eigsh
+import math
+from scipy.linalg import norm
+import scipy as sp
+from numpy.linalg import inv
+from scipy import interpolate
+
+#########################Define Soft-Coulomb matrix#################################
+
+
+def interaction(var):
+    return 1/np.sqrt(a**2+var**2)
+
+def SC2mat(Nx):
+    SC2intmat = np.empty((Nx,Nx))
+    for i in range(Nx):
+        for j in range(Nx):
+            SC2intmat[i,j]=interaction(x[i]-x[j])
+    return SC2intmat
+
+
+#########################Inversion Defenition#######################################
+
+
+def Lee_Bar_Inv_Ens(vinv,gdens,density,w,conv):
+    number = np.Inf
+    while  number > conv:
+        vinv = gdens*vinv/density
+        diags = np.array([vinv+diag, diag/-2, diag/-2])
+        HSguess= spa.dia_matrix((diags,[0,-1,1]),shape=s)
+        valsg, vecsg = eigsh(HSguess,which='SA')
+        gdens = (2-w)*np.square(vecsg[:,0])+w*np.square(vecsg[:,1])
+        number=(np.abs(np.ones(Nx)-gdens/density)).max()
+        print(number)
+    return vinv,valsg,vecsg
+
+
+#########################Define Variables###########################################
+
+
+# define the size, number of points, and the 1D grid
+
+Lx=1
+Nx=1000
+x = np.linspace(-Lx*0.5, Lx*0.5, Nx, endpoint = False)
+
+# Define dx
+
+dx =x[2] - x[1] #int(L/Nx) #this gives zero division error
+
+#Define softening parameter
+
+a=0.1
+
+# define the size of a matrix [Nx,Nx]
+
+s = (Nx,Nx)
+
+# Energies from interacting system (for ensemble energy)
+E0=15.1226#change with yours
+E1=27.5626#change with yours
+
+########################Import Data#################################################
+
+
+#Import density for N=300 and x = np.linspace(-Lx*0.5, Lx*0.5, Nx, endpoint = True)
+density1=np.genfromtxt('denspy1000-1-9.dat')
+densityGS=np.genfromtxt('denspy1000-9.dat')
+#print(np.sum(density1))
+#exit()
+
+
+########################Calculate Interacting ensemble density######################
+
+gws = np.linspace(0.249, 0.251, 11, endpoint = True)
+ensdens =np.empty((Nx, len(gws)))
+ensexc=np.empty((1, len(gws)))
+ensvxc=np.copy(ensdens)
+ensphi0=np.copy(ensdens)
+ensphi1=np.copy(ensdens)
+ensvh=np.copy(ensdens)
+
+for i,gw in enumerate(gws):
+    density= (1-gw)*densityGS + gw*density1
+######################Initial Guess###############################################
+# 2 body soft-coulomb matrix
+    SC2intmat = SC2mat(Nx)
+    
+# Hartree potnetial
+    vh = SC2intmat.dot(density)
+
+# Inintial KS eigenfunctions
+    diag = np.ones(Nx)/dx**2
+    diags = np.array([vh+diag, diag/-2, diag/-2])
+    HSguess= spa.dia_matrix((diags,[0,-1,1]),shape=s)
+    valsg, vecsg = eigsh(HSguess,which='SA')
+
+# Initial KS  ensemble density 
+
+    gdens = (2-gw)*np.square(vecsg[:,0])+gw*np.square(vecsg[:,1])
+
+# the potential updated is a copy of the hartree potential
+
+    number=1
+    vinv=np.copy(vh)
+
+###########################Inversion###################################
+
+
+    vinv, valsg, vecsg = Lee_Bar_Inv_Ens(vinv,gdens,density,gw,.00005)
+
+############################Exc#####################################
+    Eint =  (1-gw)*E0 + gw*E1
+    # kinetic energy operator matrix as sparse matrices
+    Tmat1 = spa.dia_matrix((diags,[0,-1,1]),shape=s)
+    Tks = (2-gw)*(vecsg[:,0].dot(Tmat1.dot(vecsg[:,0])))+gw*(vecsg[:,1].dot(Tmat1.dot(vecsg[:,1])))
+    U = 0.5*np.sum(vh*density)
+    Exc = Eint -(Tks+U)
+    ensdens[:,i] = density
+    ensexc[:,i] = Exc
+    ensvxc[:,i] =vinv-vh
+    ensvh[:,i]=vh
+    ensphi0[:,i]=vecsg[:,0]
+    ensphi1[:,i]=vecsg[:,1]
+    
+    
+
+###########################Checking energy difference#################
+
+
+#E1ks = valsg[0]+valsg[1]
+#E0ks = 2*valsg[0]
+#print('Eksw1-Eksw0: ',valsg[1]-valsg[0])
+
+
+###########################Plotting###################################
+
+ 
+#plt.plot(x,density-gdens, label='GS dens-guess dens ')
+#plt.plot(x,vinv -vinv[0]-(vh-vh[0]),label='vinv')
+#plt.plot(ximp, v_KS-v_KS[0], label='vKS-GS')
+#plt.legend()
+#plt.show()
+#plt.close
+
+#plt.plot(x,gdens,label='init guess 1st')
+#plt.plot(x,density,label='ref 1st')
+#plt.legend()
+#plt.show()
+#plt.close()
+
+#plt.plot(x,density-gdens,label='target-inv')
+#plt.plot(x, gdens, label='inv dens')
+#plt.legend()
+#plt.show()
+#plt.close
+
+
+########################Saving info###################################
+
+
+#save ensemble KS eigenfunctions, Eigenvalues, and Potential
+
+np.savetxt('vxc_bi_w=.25_1000_9_11val.0002.dat', ensvxc, fmt='%.9e', delimiter=' ')
+np.savetxt('dens_bi_w=.25_1000_9_11val.0002.dat', ensdens, fmt='%.9e', delimiter=' ')
+np.savetxt('vh_bi_w=.25_1000_9_11val.0002.dat', ensvh, fmt='%.9e', delimiter=' ')
+np.savetxt('phi0_bi_w=.25_1000_9_11val.0002.dat', ensphi0, fmt='%.9e', delimiter=' ')
+np.savetxt('phi1_bi_w=.25_1000_9_11val.0002.dat', ensphi1, fmt='%.9e', delimiter=' ')
+np.savetxt('ensexc_bi_w=.25_1000_9_11val.002.dat', ensexc, fmt='%.9e', delimiter=' ')
