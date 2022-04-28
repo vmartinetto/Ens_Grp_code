@@ -1,0 +1,66 @@
+
+******************************** Grid ********************************
+Simulation Box:
+  Type = sphere
+  Radius  [b] =   5.000
+  Octopus will run in 1 dimension(s).
+  Octopus will treat the system as periodic in 0 dimension(s).
+Main mesh:
+  Spacing [b] = ( 0.010)    volume/point [b] =      0.01000
+  # inner mesh =       1001
+  # total mesh =       1009
+  Grid Cutoff [H] = 49348.022005    Grid Cutoff [Ry] = 98696.044011
+**********************************************************************
+
+
+***************************** Symmetries *****************************
+Symmetries are disabled since non-spherically symmetric species may be present.
+**********************************************************************
+
+Symmetries have been disabled by SymmetriesCompute = false.
+**********************************************************************
+
+
+**************************** Theory Level ****************************
+Input: [TheoryLevel = independent_particles]
+**********************************************************************
+
+SCF converged in  128 iterations
+
+Some of the states are not fully converged!
+Eigenvalues [H]
+ #st  Spin   Eigenvalue      Occupation
+   1   --     0.049175       2.000000
+   2   --     0.196685       0.000000
+   3   --     0.442541       0.000000
+   4   --     0.786747       0.000000
+   5   --     1.230419       0.000000
+   6   --     1.770165       0.000000
+
+Energy [H]:
+      Total       =                NaN
+      Free        =                NaN
+      -----------
+      Ion-ion     =                NaN
+      Eigenvalues =         0.09834979
+      Hartree     =         0.00000000
+      Int[n*v_xc] =         0.00000000
+      Exchange    =         0.00000000
+      Correlation =         0.00000000
+      vanderWaals =         0.00000000
+      Delta XC    =         0.00000000
+      Entropy     =         0.00000000
+      -TS         =         0.00000000
+      Kinetic     =         0.09834979
+      External    =         0.00000000
+      Non-local   =         0.00000000
+
+Dipole:                 [b]          [Debye]
+      <x> =    4.23355E-05      1.07606E-04
+ 
+Convergence:
+      abs_dens =  1.08072142E-05 ( 0.00000000E+00)
+      rel_dens =  5.40360711E-06 ( 1.00000000E-05)
+      abs_ev =  1.44222987E-07 ( 0.00000000E+00) [H]
+      rel_ev =  1.46642897E-06 ( 0.00000000E+00)
+
