@@ -41,13 +41,25 @@ def Int_op_sparse(Nx,dx):
 
     return Wmat
 
+# Import the data
 dat = np.loadtxt('vecs-1001-9-2030.dat')
+
+# Define my states
 ground = dat[:,0]
-Nx = len(dat[:,0])
+first = dat[:,1]
+second = dat[:,2]
+third = dat[:,3]
+
+# set variables
+Nx = int(np.sqrt(len(dat[:,0])))
+print(Nx)
 x = np.linspace(0,6,Nx)
 vext = np.zeros(Nx)
 dx = np.abs(x[1]-x[0])
+a = .1
+HtEV = 27.2114
 
+# compute external potnetial
 for i in range(Nx):
     if (dx*i > 1) and (dx*i < 2):
         vext[i] = 20
@@ -66,5 +78,15 @@ Wmat = Int_op_sparse(Nx,dx)
 # Construct the Hamiltonian Operator from the previous two
 print('H')
 ham = Tmat2 + Wmat
+
+# calculate energies
 print('En')
-print('Energy0: ', ground.dot(ham.dot(ground)))
+print('Energy0: ' ,ground.dot(ham.dot(ground)))
+print('Energy0: ', HtEV*ground.dot(ham.dot(ground)))
+print('T0: ',HtEV*ground.dot(KIN_OP.dot(ground)))
+print('Energy1: ', HtEV*first.dot(ham.dot(first)))
+print('T1: ',HtEV*first.dot(KIN_OP.dot(first)))
+print('Energy2: ', HtEV*second.dot(ham.dot(second)))
+print('T2: ',HtEV*second.dot(KIN_OP.dot(second)))
+print('Energy3: ', HtEV*third.dot(ham.dot(third)))
+print('T3: ',HtEV*third.dot(KIN_OP.dot(third)))
